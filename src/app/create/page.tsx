@@ -224,20 +224,26 @@ const tierAlternatives = {
 };
 
 async function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+  const imageBitmap = await createImageBitmap(file);
 
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        resolve(reader.result);
-      } else {
-        reject(new Error("Failed to convert file to data URL."));
-      }
-    };
+  const maxWidth = 1200;
+  const scale = Math.min(1, maxWidth / imageBitmap.width);
 
-    reader.onerror = () => reject(new Error("File reading failed."));
-    reader.readAsDataURL(file);
-  });
+  const targetWidth = Math.round(imageBitmap.width * scale);
+  const targetHeight = Math.round(imageBitmap.height * scale);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Canvas context could not be created.");
+  }
+
+  ctx.drawImage(imageBitmap, 0, 0, targetWidth, targetHeight);
+
+  return canvas.toDataURL("image/jpeg", 0.72);
 }
 
 function NoteChip({
@@ -339,7 +345,7 @@ export default function CreatePage() {
       return;
     }
 
-    const maxSizeMb = 8;
+    const maxSizeMb = 5;
     if (file.size > maxSizeMb * 1024 * 1024) {
       setError(`Image must be smaller than ${maxSizeMb}MB.`);
       return;
@@ -499,7 +505,7 @@ export default function CreatePage() {
                 <p className="mt-3 text-sm leading-6 text-[#bda28f]">
                   Atmospheric, emotional, or visually rich imagery works best —
                   weddings, fog, festivals, travel, sea air, dusk, interiors,
-                  skin, texture, or stillness.
+                  skin, texture, or stillness.For best results, upload images under 5MB.
                 </p>
               </div>
 
